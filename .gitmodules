@@ -1,0 +1,6 @@
+[submodule "cytrums-front"]
+	path = cytrums-front
+	url = git@github.com:joris-pothin/cytrums-front.git
+[submodule "cytrums-api"]
+	path = cytrums-api
+	url = git@github.com:joris-pothin/cytrums-api.git

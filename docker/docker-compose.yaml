@@ -1,0 +1,62 @@
+version: "3.7"
+
+services:
+  mysql:
+    build:
+      context: ../
+      dockerfile: docker/mysql/Dockerfile
+    environment:
+      # TODO check credentials
+      TZ: 'Europe/Paris'
+      MYSQL_ROOT_PASSWORD: root
+      MYSQl_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - 3307:3306
+    container_name: mysql
+    restart: always
+    volumes:
+      - ../mysql:/var/lib/mysql
+    networks:
+      - default
+
+  api:
+    build:
+      context: ../
+      dockerfile: docker/api/Dockerfile
+    expose:
+      - '9000'
+    depends_on:
+      - mysql
+    volumes:
+      - ./:/var/www/html/symfony:cached
+      - ./logs:/var/log/php
+
+  web:
+    build: build/nginx
+    restart: always
+    ports:
+      - 81:80
+    depends_on:
+      - php
+      - mysql
+    volumes:
+      - ./:/var/www/html/symfony:cached
+      - ./logs:/var/log/nginx
+
+  front:
+    container_name: front
+    build:
+      context: ../
+      dockerfile: docker/front/Dockerfile
+    volumes:
+      - ../app:/app # TODO check shared volumes
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+
+
+networks:
+  default:
