@@ -1,0 +1,66 @@
+version: '3.5'
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+      args:
+        APP_ENV: '${APP_ENV}'
+    ports:
+      - '${NGINX_PORT_HTTP}:80'
+      - '${NGINX_PORT_HTTPS}:443'
+    depends_on:
+      - php-fpm
+    volumes:
+      - './var/log/nginx:/var/log/nginx'
+      - '${API_DIR}/:/var/www'
+  php-fpm:
+    build:
+      context: .
+      dockerfile: ./php-fpm/Dockerfile
+      args:
+        APP_ENV: '${APP_ENV}'
+        APP_DEBUG: '${APP_DEBUG}'
+    ports:
+      - '9205:9005'
+    volumes:
+      - './:/var/www/'
+    links:
+      - mysql
+      - rabbitmq
+      - maildev
+    dns:
+      - 8.8.8.8
+  mysql:
+    image: 'library/mariadb:10.3.27'
+    command: '--default-authentication-plugin=mysql_native_password'
+    environment:
+      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: '${MYSQL_ALLOW_EMPTY_PASSWORD}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE}'
+    volumes:
+      - './docker/mysql/shared/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro'
+  adminer:
+    image: adminer
+    volumes:
+      - './docker/adminer/adminer.css:/var/www/html/adminer.css'
+    links:
+      - mysql
+    ports:
+      - '22081:8080'
+  maildev:
+    image: djfarrelly/maildev
+    ports:
+      - '22085:80'
+  rabbitmq:
+    image: rabbitmq:3.7-management
+    environment:
+      RABBITMQ_DEFAULT_USER: $RABBITMQ_USER
+      RABBITMQ_DEFAULT_PASS: $RABBITMQ_PWD
+    volumes:
+      - './docker/rabbitmq/shared/data:/var/lib/rabbitmq/mnesia'
+    hostname: rabbitme
+    ports:
+      - '22600:15672'
